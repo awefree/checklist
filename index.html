@@ -23,7 +23,7 @@
   #items.two-col { display: grid; grid-template-columns: 1fr 1fr; }
   #gear { position: fixed; bottom: 16px; right: 16px; width: 48px;
           height: 48px; border-radius: 50%; background: #0f3460;
-          border: none; color: #eee; font-size: 1.5rem; cursor: pointer; }
+          border: none; color: #eee; font-size: 1.5rem; cursor: pointer; display: none; }
   #panel { position: fixed; top: 0; right: -320px; width: 300px;
            height: 100vh; background: #16213e; padding: 20px;
            transition: right 0.3s; overflow-y: auto; z-index: 10; }
@@ -153,7 +153,13 @@ function tick() {
   var now = new Date();
   var h = now.getHours(), m = now.getMinutes();
   var show = (h > d.showH || (h === d.showH && m >= d.showM)) && h < d.hideH;
-  document.getElementById('list').style.display = show ? 'block' : 'none';
+  document.body.style.background = show ? '#1a1a2e' : '#000';   
+  document.body.addEventListener('click', function() {
+  var g = document.getElementById('gear');
+  g.style.display = 'block';
+  clearTimeout(g._t);
+  g._t = setTimeout(function() { g.style.display = 'none'; }, 3000);
+});   
 }
 setInterval(tick, 1000);
 tick();
