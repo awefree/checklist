@@ -153,16 +153,19 @@ function tick() {
   var now = new Date();
   var h = now.getHours(), m = now.getMinutes();
   var show = (h > d.showH || (h === d.showH && m >= d.showM)) && h < d.hideH;
-  document.body.style.background = show ? '#1a1a2e' : '#000';   
-  document.body.addEventListener('click', function() {
+  document.getElementById('list').style.display = show ? 'block' : 'none';
+  document.getElementById('tabs').style.display = show ? 'flex' : 'none';
+  document.body.style.background = show ? '#1a1a2e' : '#000';
+}
+setInterval(tick, 1000);
+tick();
+
+document.body.addEventListener('click', function() {
   var g = document.getElementById('gear');
   g.style.display = 'block';
   clearTimeout(g._t);
   g._t = setTimeout(function() { g.style.display = 'none'; }, 3000);
-});   
-}
-setInterval(tick, 1000);
-tick();
+});
 
 var panel = document.getElementById('panel');
 document.getElementById('gear').onclick = function() {
