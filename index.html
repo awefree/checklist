@@ -6,13 +6,14 @@
   body { background: #1a1a2e; color: #eee; font-family: sans-serif;
          display: flex; justify-content: center; align-items: center;
          height: 100vh; margin: 0; }
-  #clock { font-size: 4rem; }
-  #list { display: none; font-size: 1.8rem; text-align: left; }
-  #list label { display: block; margin: 0.5em 0; }
+  #list { display: none; font-size: 2.5rem; text-align: left; }
+  #list h2 { font-size: 3rem; margin-bottom: 1em; }
+  #list label { display: block; margin: 1em 0; color: red;
+                cursor: pointer; }
+  #list input { width: 1.5rem; height: 1.5rem; }
 </style>
 </head>
 <body>
-  <div id="clock">--:--</div>
   <div id="list">
     <h2>Morning Checklist</h2>
     <label><input type="checkbox"> Make coffee</label>
@@ -21,20 +22,28 @@
     <label><input type="checkbox"> Take meds</label>
   </div>
 <script>
-  var showAt = 7;    // hour (24h) when list appears
-  var showMin = 0;   // minute
+  var showAt = 7;
+  var showMin = 0;
+  var hideAt = 21;
+
   function tick() {
     var now = new Date();
     var h = now.getHours(), m = now.getMinutes();
-    document.getElementById('clock').textContent =
-      ((h % 12) || 12) + ':' + (m < 10 ? '0' : '') + m +
-      (h >= 12 ? ' PM' : ' AM');
-    if (h > showAt || (h == showAt && m >= showMin)) {
+    if (h >= hideAt) {
+      document.getElementById('list').style.display = 'none';
+    } else if (h > showAt || (h == showAt && m >= showMin)) {
       document.getElementById('list').style.display = 'block';
     }
   }
   setInterval(tick, 1000);
   tick();
+
+  var boxes = document.querySelectorAll('input[type=checkbox]');
+  for (var i = 0; i < boxes.length; i++) {
+    boxes[i].addEventListener('change', function() {
+      this.parentElement.style.color = this.checked ? 'green' : 'red';
+    });
+  }
 </script>
 </body>
 </html>   
