@@ -8,18 +8,14 @@
          height: 100vh; margin: 0; }
   #list { display: none; font-size: 2.5rem; text-align: left; }
   #list h2 { font-size: 3rem; margin-bottom: 1em; }
-  #list label { display: block; margin: 1em 0; color: red;
-                cursor: pointer; }
+  #list label { display: block; margin: 1em 0; color: red; cursor: pointer; }
   #list input { width: 1.5rem; height: 1.5rem; }
 </style>
 </head>
 <body>
   <div id="list">
     <h2>Morning Checklist</h2>
-    <label><input type="checkbox"> Make coffee</label>
-    <label><input type="checkbox"> Check email</label>
-    <label><input type="checkbox"> Review schedule</label>
-    <label><input type="checkbox"> Take meds</label>
+    <div id="items"></div>
   </div>
 <script>
   var showAt = 7;
@@ -38,12 +34,29 @@
   setInterval(tick, 1000);
   tick();
 
-  var boxes = document.querySelectorAll('input[type=checkbox]');
-  for (var i = 0; i < boxes.length; i++) {
-    boxes[i].addEventListener('change', function() {
-      this.parentElement.style.color = this.checked ? 'green' : 'red';
+  fetch('list.txt')
+    .then(function(r) { return r.text(); })
+    .then(function(text) {
+      var lines = text.split('\n').filter(function(l) { return l.trim(); });
+      var container = document.getElementById('items');
+      var saved = JSON.parse(localStorage.getItem('checks') || '{}');
+
+      lines.forEach(function(item, i) {
+        var label = document.createElement('label');
+        var box = document.createElement('input');
+        box.type = 'checkbox';
+        if (saved[i]) { box.checked = true; label.style.color = 'green'; }
+        box.addEventListener('change', function() {
+          var state = JSON.parse(localStorage.getItem('checks') || '{}');
+          state[i] = box.checked;
+          localStorage.setItem('checks', JSON.stringify(state));
+          label.style.color = box.checked ? 'green' : 'red';
+        });
+        label.appendChild(box);
+        label.appendChild(document.createTextNode(' ' + item));
+        container.appendChild(label);
+      });
     });
-  }
 </script>
 </body>
 </html>   
