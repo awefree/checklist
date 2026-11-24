@@ -4,7 +4,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <style>
   * { box-sizing: border-box; }
-  body { background: #1a1a2e; color: #eee; font-family: sans-serif;
+  body { background: #000; color: #eee; font-family: sans-serif;
          height: 100vh; margin: 0; overflow: hidden; }
   #app { display: flex; flex-direction: column; height: 100vh; }
   #tabs { display: flex; gap: 4px; padding: 8px 12px; background: #16213e; }
@@ -159,7 +159,6 @@ function tick() {
   var show = (h > d.showH || (h === d.showH && m >= d.showM)) && h < d.hideH;
   document.getElementById('list').style.display = show ? 'block' : 'none';
   document.getElementById('tabs').style.display = show ? 'flex' : 'none';
-  document.body.style.background = show ? '#1a1a2e' : '#000';
 }
 setInterval(tick, 1000);
 tick();
