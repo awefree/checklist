@@ -101,7 +101,7 @@ if (!data) {
     name: 'Morning',
     showH: 7, showM: 0, hideH: 21,
     font: 2.5, space: 1, twoCol: false,
-    items: ['Make coffee', 'Check email', 'Review schedule', 'Take meds']
+    items: [{text:'Make coffee',hidden:false},{text:'Check email',hidden:false},{text:'Review schedule',hidden:false},{text:'Take meds',hidden:false}]
   }];
   save();
 }
@@ -126,10 +126,10 @@ function render() {
   var items = document.getElementById('items');
   items.innerHTML = '';
   items.className = d.twoCol ? 'two-col' : '';
-  var unchecked = d.items.map(function(t, i) { return {t: t, i: i}; })
-    .filter(function(o) { return !checks[active + '_' + o.i]; });
-  var checked = d.items.map(function(t, i) { return {t: t, i: i}; })
-    .filter(function(o) { return checks[active + '_' + o.i]; });
+  var visible = d.items.map(function(t, i) { return {t: t, i: i}; })
+  .filter(function(o) { return !d.items[o.i].hidden; });
+  var unchecked = visible.filter(function(o) { return !checks[active + '_' + o.i]; });
+  var checked = visible.filter(function(o) { return checks[active + '_' + o.i]; });   
   unchecked.concat(checked).forEach(function(o) {
     var div = document.createElement('div');
     div.className = 'item' + (checks[active + '_' + o.i] ? ' checked' : '');
@@ -142,7 +142,7 @@ function render() {
       render();
     });
     div.appendChild(box);
-    div.appendChild(document.createTextNode(o.t));
+    div.appendChild(document.createTextNode(o.t text));
     items.appendChild(div);
   });
   items.style.fontSize = d.font + 'rem';
@@ -182,8 +182,7 @@ document.getElementById('gear').onclick = function() {
   document.getElementById('editTwoCol').checked = d.twoCol;
   panelOnclick();
   panel.classList.add('open');
-};
-function panelOnclick() {
+};function panelOnclick() {
   var d = data[active];
   var li = document.getElementById('listItems');
   li.innerHTML = '';
@@ -192,39 +191,36 @@ function panelOnclick() {
     row.className = 'edit-item';
 
     var up = document.createElement('button');
-    up.className = 'arrow';
-    up.textContent = '↑';
+    up.className = 'arrow'; up.textContent = '↑';
     up.onclick = function() {
       if (i === 0) return;
-      var tmp = d.items[i-1]; d.items[i-1] = d.items[i]; d.items[i] = tmp;
+      var t = d.items[i-1]; d.items[i-1] = d.items[i]; d.items[i] = t;
       save(); render(); panelOnclick();
     };
 
     var down = document.createElement('button');
-    down.className = 'arrow';
-    down.textContent = '↓';
+    down.className = 'arrow'; down.textContent = '↓';
     down.onclick = function() {
       if (i === d.items.length - 1) return;
-      var tmp = d.items[i+1]; d.items[i+1] = d.items[i]; d.items[i] = tmp;
+      var t = d.items[i+1]; d.items[i+1] = d.items[i]; d.items[i] = t;
       save(); render(); panelOnclick();
     };
 
     var inp = document.createElement('input');
-    inp.type = 'text';
-    inp.value = item;
-    inp.onchange = function() {
-      d.items[i] = inp.value;
-      save(); render(); panelOnclick();
-    };
+    inp.type = 'text'; inp.value = item.text;
+    inp.onchange = function() { d.items[i].text = inp.value; save(); render(); panelOnclick(); };
+
+    var vis = document.createElement('input');
+    vis.type = 'checkbox'; vis.checked = item.hidden ? false : true;
+    vis.title = 'Show';
+    vis.onchange = function() { d.items[i].hidden = !vis.checked; save(); render(); panelOnclick(); };
 
     var del = document.createElement('button');
     del.textContent = '×';
     del.onclick = function() { d.items.splice(i, 1); save(); render(); panelOnclick(); };
 
-    row.appendChild(up);
-    row.appendChild(down);
-    row.appendChild(inp);
-    row.appendChild(del);
+    row.appendChild(up); row.appendChild(down);
+    row.appendChild(inp); row.appendChild(vis); row.appendChild(del);
     li.appendChild(row);
   });
 }   
@@ -242,7 +238,7 @@ document.getElementById('btnClose').onclick = function() {
 };
 document.getElementById('btnAdd').onclick = function() {
   var v = document.getElementById('newItem').value.trim();
-  if (v) { data[active].items.push(v); document.getElementById('newItem').value = '';
+  if (v) { data[active].items.push({ text: v, hidden: false }); document.getElementById('newItem').value = '';
            save(); render(); panelOnclick(); }
 };
 document.getElementById('btnNewList').onclick = function() {
