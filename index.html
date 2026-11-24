@@ -49,6 +49,10 @@
   .toggle-row { display: flex; align-items: center; gap: 8px; margin: 8px 0; }
   .toggle-row input { width: 1.2rem; height: 1.2rem; }
   .toggle-row span { font-size: 0.9rem; }
+  #listItems .edit-item input { flex: 1; padding: 4px; background: #0f3460;
+  color: #eee; border: 1px solid #333; border-radius: 4px; font-size: 0.9rem; }
+  #listItems .edit-item .arrow { background: #0f3460; color: #eee;
+  border: none; border-radius: 4px; padding: 2px 8px; cursor: pointer; }   
 </style>
 </head>
 <body>
@@ -187,16 +191,44 @@ function panelOnclick() {
   d.items.forEach(function(item, i) {
     var row = document.createElement('div');
     row.className = 'edit-item';
-    var span = document.createElement('span');
-    span.textContent = item;
-    var btn = document.createElement('button');
-    btn.textContent = '×';
-    btn.onclick = function() { d.items.splice(i, 1); save(); render(); panelOnclick(); };
-    row.appendChild(span);
-    row.appendChild(btn);
+
+    var up = document.createElement('button');
+    up.className = 'arrow';
+    up.textContent = '↑';
+    up.onclick = function() {
+      if (i === 0) return;
+      var tmp = d.items[i-1]; d.items[i-1] = d.items[i]; d.items[i] = tmp;
+      save(); render(); panelOnclick();
+    };
+
+    var down = document.createElement('button');
+    down.className = 'arrow';
+    down.textContent = '↓';
+    down.onclick = function() {
+      if (i === d.items.length - 1) return;
+      var tmp = d.items[i+1]; d.items[i+1] = d.items[i]; d.items[i] = tmp;
+      save(); render(); panelOnclick();
+    };
+
+    var inp = document.createElement('input');
+    inp.type = 'text';
+    inp.value = item;
+    inp.onchange = function() {
+      d.items[i] = inp.value;
+      save(); render(); panelOnclick();
+    };
+
+    var del = document.createElement('button');
+    del.textContent = '×';
+    del.onclick = function() { d.items.splice(i, 1); save(); render(); panelOnclick(); };
+
+    row.appendChild(up);
+    row.appendChild(down);
+    row.appendChild(inp);
+    row.appendChild(del);
     li.appendChild(row);
   });
-}
+}   
 document.getElementById('btnClose').onclick = function() {
   var d = data[active];
   d.name = document.getElementById('editName').value;
