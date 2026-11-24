@@ -3,60 +3,221 @@
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <style>
+  * { box-sizing: border-box; }
   body { background: #1a1a2e; color: #eee; font-family: sans-serif;
-         display: flex; justify-content: center; align-items: center;
-         height: 100vh; margin: 0; }
-  #list { display: none; font-size: 2.5rem; text-align: left; }
-  #list h2 { font-size: 3rem; margin-bottom: 1em; }
-  #list label { display: block; margin: 1em 0; color: red; cursor: pointer; }
-  #list input { width: 1.5rem; height: 1.5rem; }
+         height: 100vh; margin: 0; overflow: hidden; }
+  #app { display: flex; flex-direction: column; height: 100vh; }
+  #tabs { display: flex; gap: 4px; padding: 8px 12px; background: #16213e; }
+  #tabs button { background: #0f3460; border: none; color: #eee;
+                 padding: 8px 16px; border-radius: 6px; font-size: 1rem; }
+  #tabs button.active { background: #e94560; }
+  #content { flex: 1; display: flex; justify-content: center;
+             align-items: center; padding: 20px; }
+  #list { width: 100%; max-width: 600px; display: none; }
+  #list h2 { text-align: center; margin-bottom: 1em; }
+  .item { display: flex; align-items: center; cursor: pointer;
+          transition: all 0.4s ease; }
+  .item.checked { color: #4caf50; opacity: 0.7; }
+  .item:not(.checked) { color: #e94560; }
+  .item input { width: 1.5rem; height: 1.5rem; margin-right: 12px; }
+  #items.two-col { display: grid; grid-template-columns: 1fr 1fr; }
+  #gear { position: fixed; bottom: 16px; right: 16px; width: 48px;
+          height: 48px; border-radius: 50%; background: #0f3460;
+          border: none; color: #eee; font-size: 1.5rem; cursor: pointer; }
+  #panel { position: fixed; top: 0; right: -320px; width: 300px;
+           height: 100vh; background: #16213e; padding: 20px;
+           transition: right 0.3s; overflow-y: auto; z-index: 10; }
+  #panel.open { right: 0; }
+  #panel h3 { margin-top: 0; }
+  #panel label { display: block; margin: 8px 0 4px; font-size: 0.9rem; }
+  #panel input[type=range] { width: 100%; }
+  #panel input[type=text], #panel input[type=number] {
+    width: 100%; padding: 8px; background: #0f3460; color: #eee;
+    border: 1px solid #333; border-radius: 4px; font-size: 1rem; }
+  #panel button { margin: 4px 2px; padding: 6px 12px; border: none;
+                  border-radius: 4px; cursor: pointer; font-size: 0.9rem; }
+  .btn-add { background: #4caf50; color: #fff; }
+  .btn-new { background: #0f3460; color: #eee; }
+  .btn-del { background: #e94560; color: #fff; }
+  .btn-close { background: #555; color: #fff; width: 100%; margin-top: 16px; }
+  #newItem { margin-top: 8px; }
+  #listItems { margin-top: 8px; }
+  #listItems .edit-item { display: flex; align-items: center; margin: 4px 0; }
+  #listItems .edit-item span { flex: 1; font-size: 0.9rem; }
+  #listItems .edit-item button { background: #e94560; color: #fff;
+    border: none; border-radius: 4px; padding: 2px 8px; cursor: pointer; }
+  .toggle-row { display: flex; align-items: center; gap: 8px; margin: 8px 0; }
+  .toggle-row input { width: 1.2rem; height: 1.2rem; }
+  .toggle-row span { font-size: 0.9rem; }
 </style>
 </head>
 <body>
-  <div id="list">
-    <h2>Morning Checklist</h2>
-    <div id="items"></div>
+<div id="app">
+  <div id="tabs"></div>
+  <div id="content">
+    <div id="list">
+      <h2 id="title"></h2>
+      <div id="items"></div>
+    </div>
   </div>
+</div>
+<button id="gear">⚙</button>
+<div id="panel">
+  <h3>Settings</h3>
+  <label>List name</label>
+  <input type="text" id="editName">
+  <label>Show at (hour, 24h)</label>
+  <input type="number" id="editShowH" min="0" max="23">
+  <label>Show at (minute)</label>
+  <input type="number" id="editShowM" min="0" max="59">
+  <label>Hide at (hour, 24h)</label>
+  <input type="number" id="editHideH" min="0" max="23">
+  <label>Font size</label>
+  <input type="range" id="editFont" min="1" max="5" step="0.1">
+  <label>Spacing</label>
+  <input type="range" id="editSpace" min="0" max="3" step="0.1">
+  <div class="toggle-row">
+    <input type="checkbox" id="editTwoCol">
+    <span>Two columns</span>
+  </div>
+  <hr>
+  <h3>Items</h3>
+  <div id="listItems"></div>
+  <input type="text" id="newItem" placeholder="New item...">
+  <button class="btn-add" id="btnAdd">+ Add</button>
+  <hr>
+  <button class="btn-new" id="btnNewList">+ New List</button>
+  <button class="btn-del" id="btnDelList">Delete This List</button>
+  <button class="btn-close" id="btnClose">Close</button>
+</div>
 <script>
-  var showAt = 7;
-  var showMin = 0;
-  var hideAt = 21;
+var data = JSON.parse(localStorage.getItem('checklists') || 'null');
+if (!data) {
+  data = [{
+    name: 'Morning',
+    showH: 7, showM: 0, hideH: 21,
+    font: 2.5, space: 1, twoCol: false,
+    items: ['Make coffee', 'Check email', 'Review schedule', 'Take meds']
+  }];
+  save();
+}
+var active = 0;
+var checks = JSON.parse(localStorage.getItem('checks') || '{}');
 
-  function tick() {
-    var now = new Date();
-    var h = now.getHours(), m = now.getMinutes();
-    if (h >= hideAt) {
-      document.getElementById('list').style.display = 'none';
-    } else if (h > showAt || (h == showAt && m >= showMin)) {
-      document.getElementById('list').style.display = 'block';
-    }
-  }
-  setInterval(tick, 1000);
-  tick();
+function save() { localStorage.setItem('checklists', JSON.stringify(data)); }
+function saveChecks() { localStorage.setItem('checks', JSON.stringify(checks)); }
 
-  fetch('list.txt')
-    .then(function(r) { return r.text(); })
-    .then(function(text) {
-      var lines = text.split('\n').filter(function(l) { return l.trim(); });
-      var container = document.getElementById('items');
-      var saved = JSON.parse(localStorage.getItem('checks') || '{}');
-
-      lines.forEach(function(item, i) {
-        var label = document.createElement('label');
-        var box = document.createElement('input');
-        box.type = 'checkbox';
-        if (saved[i]) { box.checked = true; label.style.color = 'green'; }
-        box.addEventListener('change', function() {
-          var state = JSON.parse(localStorage.getItem('checks') || '{}');
-          state[i] = box.checked;
-          localStorage.setItem('checks', JSON.stringify(state));
-          label.style.color = box.checked ? 'green' : 'red';
-        });
-        label.appendChild(box);
-        label.appendChild(document.createTextNode(' ' + item));
-        container.appendChild(label);
-      });
+function render() {
+  var d = data[active];
+  document.getElementById('title').textContent = d.name;
+  var tabs = document.getElementById('tabs');
+  tabs.innerHTML = '';
+  data.forEach(function(l, i) {
+    var b = document.createElement('button');
+    b.textContent = l.name;
+    if (i === active) b.className = 'active';
+    b.onclick = function() { active = i; render(); };
+    tabs.appendChild(b);
+  });
+  var items = document.getElementById('items');
+  items.innerHTML = '';
+  items.className = d.twoCol ? 'two-col' : '';
+  var unchecked = d.items.map(function(t, i) { return {t: t, i: i}; })
+    .filter(function(o) { return !checks[active + '_' + o.i]; });
+  var checked = d.items.map(function(t, i) { return {t: t, i: i}; })
+    .filter(function(o) { return checks[active + '_' + o.i]; });
+  unchecked.concat(checked).forEach(function(o) {
+    var div = document.createElement('div');
+    div.className = 'item' + (checks[active + '_' + o.i] ? ' checked' : '');
+    var box = document.createElement('input');
+    box.type = 'checkbox';
+    box.checked = !!checks[active + '_' + o.i];
+    box.addEventListener('change', function() {
+      checks[active + '_' + o.i] = box.checked;
+      saveChecks();
+      render();
     });
+    div.appendChild(box);
+    div.appendChild(document.createTextNode(o.t));
+    items.appendChild(div);
+  });
+  items.style.fontSize = d.font + 'rem';
+  items.querySelectorAll('.item').forEach(function(el) {
+    el.style.margin = (d.space * 0.5) + 'em 0';
+  });
+  document.getElementById('title').style.fontSize = (d.font + 0.5) + 'rem';
+}
+
+function tick() {
+  var d = data[active];
+  var now = new Date();
+  var h = now.getHours(), m = now.getMinutes();
+  var show = (h > d.showH || (h === d.showH && m >= d.showM)) && h < d.hideH;
+  document.getElementById('list').style.display = show ? 'block' : 'none';
+}
+setInterval(tick, 1000);
+tick();
+
+var panel = document.getElementById('panel');
+document.getElementById('gear').onclick = function() {
+  var d = data[active];
+  document.getElementById('editName').value = d.name;
+  document.getElementById('editShowH').value = d.showH;
+  document.getElementById('editShowM').value = d.showM;
+  document.getElementById('editHideH').value = d.hideH;
+  document.getElementById('editFont').value = d.font;
+  document.getElementById('editSpace').value = d.space;
+  document.getElementById('editTwoCol').checked = d.twoCol;
+  panelOnclick();
+  panel.classList.add('open');
+};
+function panelOnclick() {
+  var d = data[active];
+  var li = document.getElementById('listItems');
+  li.innerHTML = '';
+  d.items.forEach(function(item, i) {
+    var row = document.createElement('div');
+    row.className = 'edit-item';
+    var span = document.createElement('span');
+    span.textContent = item;
+    var btn = document.createElement('button');
+    btn.textContent = '×';
+    btn.onclick = function() { d.items.splice(i, 1); save(); render(); panelOnclick(); };
+    row.appendChild(span);
+    row.appendChild(btn);
+    li.appendChild(row);
+  });
+}
+document.getElementById('btnClose').onclick = function() {
+  var d = data[active];
+  d.name = document.getElementById('editName').value;
+  d.showH = parseInt(document.getElementById('editShowH').value) || 0;
+  d.showM = parseInt(document.getElementById('editShowM').value) || 0;
+  d.hideH = parseInt(document.getElementById('editHideH').value) || 23;
+  d.font = parseFloat(document.getElementById('editFont').value);
+  d.space = parseFloat(document.getElementById('editSpace').value);
+  d.twoCol = document.getElementById('editTwoCol').checked;
+  save(); render();
+  panel.classList.remove('open');
+};
+document.getElementById('btnAdd').onclick = function() {
+  var v = document.getElementById('newItem').value.trim();
+  if (v) { data[active].items.push(v); document.getElementById('newItem').value = '';
+           save(); render(); panelOnclick(); }
+};
+document.getElementById('btnNewList').onclick = function() {
+  data.push({ name: 'List ' + (data.length + 1), showH: 7, showM: 0,
+              hideH: 21, font: 2.5, space: 1, twoCol: false, items: [] });
+  active = data.length - 1;
+  save(); render(); panelOnclick();
+};
+document.getElementById('btnDelList').onclick = function() {
+  if (data.length <= 1) return;
+  data.splice(active, 1);
+  active = 0;
+  save(); render(); panelOnclick();
+};
+render();
 </script>
 </body>
 </html>   
