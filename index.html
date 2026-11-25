@@ -42,17 +42,17 @@
   .btn-close { background: #555; color: #fff; width: 100%; margin-top: 16px; }
   #newItem { margin-top: 8px; }
   #listItems { margin-top: 8px; }
-  #listItems .edit-item { display: flex; align-items: center; margin: 4px 0; }
-  #listItems .edit-item span { flex: 1; font-size: 0.9rem; }
-  #listItems .edit-item button { background: #e94560; color: #fff;
+  #listItems .edit-item { display: flex; align-items: center; margin: 4px 0; gap: 4px; }
+  #listItems .edit-item input[type=text] { flex: 1; padding: 4px; background: #0f3460;
+    color: #eee; border: 1px solid #333; border-radius: 4px; font-size: 0.9rem; }
+  #listItems .edit-item input[type=checkbox] { width: 1.2rem; height: 1.2rem; }
+  #listItems .edit-item .arrow { background: #0f3460; color: #eee;
+    border: none; border-radius: 4px; padding: 2px 8px; cursor: pointer; }
+  #listItems .edit-item .del { background: #e94560; color: #fff;
     border: none; border-radius: 4px; padding: 2px 8px; cursor: pointer; }
   .toggle-row { display: flex; align-items: center; gap: 8px; margin: 8px 0; }
   .toggle-row input { width: 1.2rem; height: 1.2rem; }
   .toggle-row span { font-size: 0.9rem; }
-  #listItems .edit-item input { flex: 1; padding: 4px; background: #0f3460;
-  color: #eee; border: 1px solid #333; border-radius: 4px; font-size: 0.9rem; }
-  #listItems .edit-item .arrow { background: #0f3460; color: #eee;
-  border: none; border-radius: 4px; padding: 2px 8px; cursor: pointer; }   
 </style>
 </head>
 <body>
@@ -65,7 +65,7 @@
     </div>
   </div>
 </div>
-<button id="gear">⚙</button>
+<button id="gear">&#9881;</button>
 <div id="panel">
   <h3>Settings</h3>
   <label>List name</label>
@@ -105,6 +105,11 @@ if (!data) {
   }];
   save();
 }
+data.forEach(function(l) {
+  l.items = l.items.map(function(item) {
+    return typeof item === 'string' ? {text: item, hidden: false} : item;
+  });
+});
 var active = 0;
 var checks = JSON.parse(localStorage.getItem('checks') || '{}');
 
@@ -127,9 +132,9 @@ function render() {
   items.innerHTML = '';
   items.className = d.twoCol ? 'two-col' : '';
   var visible = d.items.map(function(t, i) { return {t: t, i: i}; })
-  .filter(function(o) { return !d.items[o.i].hidden; });
+    .filter(function(o) { return !o.t.hidden; });
   var unchecked = visible.filter(function(o) { return !checks[active + '_' + o.i]; });
-  var checked = visible.filter(function(o) { return checks[active + '_' + o.i]; });   
+  var checked = visible.filter(function(o) { return checks[active + '_' + o.i]; });
   unchecked.concat(checked).forEach(function(o) {
     var div = document.createElement('div');
     div.className = 'item' + (checks[active + '_' + o.i] ? ' checked' : '');
@@ -142,7 +147,7 @@ function render() {
       render();
     });
     div.appendChild(box);
-    div.appendChild(document.createTextNode(o.t text));
+    div.appendChild(document.createTextNode(o.t.text));
     items.appendChild(div);
   });
   items.style.fontSize = d.font + 'rem';
@@ -171,7 +176,8 @@ document.body.addEventListener('click', function() {
 });
 
 var panel = document.getElementById('panel');
-document.getElementById('gear').onclick = function() {
+document.getElementById('gear').onclick = function(e) {
+  e.stopPropagation();
   var d = data[active];
   document.getElementById('editName').value = d.name;
   document.getElementById('editShowH').value = d.showH;
@@ -182,48 +188,42 @@ document.getElementById('gear').onclick = function() {
   document.getElementById('editTwoCol').checked = d.twoCol;
   panelOnclick();
   panel.classList.add('open');
-};function panelOnclick() {
+};
+function panelOnclick() {
   var d = data[active];
   var li = document.getElementById('listItems');
   li.innerHTML = '';
   d.items.forEach(function(item, i) {
     var row = document.createElement('div');
     row.className = 'edit-item';
-
     var up = document.createElement('button');
-    up.className = 'arrow'; up.textContent = '↑';
+    up.className = 'arrow'; up.textContent = '\u2191';
     up.onclick = function() {
       if (i === 0) return;
       var t = d.items[i-1]; d.items[i-1] = d.items[i]; d.items[i] = t;
       save(); render(); panelOnclick();
     };
-
     var down = document.createElement('button');
-    down.className = 'arrow'; down.textContent = '↓';
+    down.className = 'arrow'; down.textContent = '\u2193';
     down.onclick = function() {
       if (i === d.items.length - 1) return;
       var t = d.items[i+1]; d.items[i+1] = d.items[i]; d.items[i] = t;
       save(); render(); panelOnclick();
     };
-
     var inp = document.createElement('input');
     inp.type = 'text'; inp.value = item.text;
     inp.onchange = function() { d.items[i].text = inp.value; save(); render(); panelOnclick(); };
-
     var vis = document.createElement('input');
-    vis.type = 'checkbox'; vis.checked = item.hidden ? false : true;
-    vis.title = 'Show';
+    vis.type = 'checkbox'; vis.checked = !item.hidden;
     vis.onchange = function() { d.items[i].hidden = !vis.checked; save(); render(); panelOnclick(); };
-
     var del = document.createElement('button');
-    del.textContent = '×';
+    del.className = 'del'; del.textContent = '\u00d7';
     del.onclick = function() { d.items.splice(i, 1); save(); render(); panelOnclick(); };
-
     row.appendChild(up); row.appendChild(down);
     row.appendChild(inp); row.appendChild(vis); row.appendChild(del);
     li.appendChild(row);
   });
-}   
+}
 document.getElementById('btnClose').onclick = function() {
   var d = data[active];
   d.name = document.getElementById('editName').value;
@@ -238,7 +238,8 @@ document.getElementById('btnClose').onclick = function() {
 };
 document.getElementById('btnAdd').onclick = function() {
   var v = document.getElementById('newItem').value.trim();
-  if (v) { data[active].items.push({ text: v, hidden: false }); document.getElementById('newItem').value = '';
+  if (v) { data[active].items.push({text: v, hidden: false});
+           document.getElementById('newItem').value = '';
            save(); render(); panelOnclick(); }
 };
 document.getElementById('btnNewList').onclick = function() {
