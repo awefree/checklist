@@ -168,7 +168,8 @@ function tick() {
 setInterval(tick, 1000);
 tick();
 
-document.body.addEventListener('click', function() {
+document.addEventListener('touchstart', function(e) {
+  if (e.target.closest('#panel') || e.target.closest('#gear')) return;
   var g = document.getElementById('gear');
   g.style.display = 'block';
   clearTimeout(g._t);
