@@ -85,14 +85,16 @@
     <span>Two columns</span>
   </div>
   <hr>
-  <h3>Items</h3>
+  <div style="display:flex;align-items:center;justify-content:space-between;">
+   <h3 style="margin:0;">Items</h3>
+   <button class="btn-close" id="btnClose" style="width:auto;margin:0;">Save</button>
+  </div>   
   <div id="listItems"></div>
   <input type="text" id="newItem" placeholder="New item...">
   <button class="btn-add" id="btnAdd">+ Add</button>
   <hr>
   <button class="btn-new" id="btnNewList">+ New List</button>
   <button class="btn-del" id="btnDelList">Delete This List</button>
-  <button class="btn-close" id="btnClose">Close</button>
 </div>
 <script>
 var data = JSON.parse(localStorage.getItem('checklists') || 'null');
